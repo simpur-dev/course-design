@@ -12,6 +12,6 @@ build/
 data/runtime/
 data/uploads/
 data/*.db
-web/node_modules/
-web/dist/
+frontend/node_modules/
+frontend/dist/
 node_modules/

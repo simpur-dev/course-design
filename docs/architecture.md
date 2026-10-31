@@ -8,12 +8,12 @@
 
 ```text
 ┌────────────────────────────────────────────────────────────┐
-│ Web 工作台（React 19 + Vite 8，hash 路由）                   │
+│ 前端工作台（frontend/，React 19 + Vite 8，hash 路由）        │
 │ 核对台 / 论文库 / 报告 / 项目记忆 / 系统状态                  │
 └──────────────────────────┬─────────────────────────────────┘
                            │ 同源 HTTP
 ┌──────────────────────────▼─────────────────────────────────┐
-│ FastAPI（src/yinju/api.py）                                 │
+│ FastAPI（backend/api/）                                      │
 │ 任务编排（单任务互斥）· PDF 上传 · 报告/记忆 API · 静态托管    │
 └───────┬───────────────┬───────────────────┬────────────────┘
         │               │                   │
@@ -31,12 +31,14 @@
 └────────────────────────────────┘ └────────────────────────┘
 ```
 
+代码边界：`backend/agent/` 是执行 Agent 的落点（当前是固定核对管线），`backend/runtime/` 管理任务与外部依赖，`backend/api/`、`backend/cli/` 只做协议适配；`frontend/src` 按 `app / shared / features` 组织。模块公共接口见 [interfaces.md](interfaces.md)。
+
 ### 1.2 主流程
 
-1. **入库**：`yinju ingest` 读取 `bib.json`，用 PyMuPDF 按页解析文本，切成段落（<= 750 字符）与句子（>= 20 字符）两类证据单元；先查内容哈希缓存，再计算 ONNX 向量，写入 seekdb 集合 `evidence_units`，同时登记 `paper` 表。
-2. **核对**：`yinju audit` 解析 Markdown 草稿中的 `[@key]` 引用，对每条主张先在被引论文内做段落级混合检索（全文 + 向量，应用侧 RRF，k=60），再在候选段内选句，交给判定器输出四档结论。
+1. **入库**：`citationproof ingest` 读取 `bib.json`，用 PyMuPDF 按页解析文本，切成段落（<= 750 字符）与句子（>= 20 字符）两类证据单元；先查内容哈希缓存，再计算 ONNX 向量，写入 seekdb 集合 `evidence_units`，同时登记 `paper` 表。
+2. **核对**：`citationproof audit` 解析 Markdown 草稿中的 `[@key]` 引用，对每条主张先在被引论文内做段落级混合检索（全文 + 向量，应用侧 RRF，k=60），再在候选段内选句，交给判定器输出四档结论。
 3. **报告**：每次核对生成 `report.md / report.csv / report.json`，每条结论带 `evidence_id`、原句、页码、两路检索排名与理由；任一条失败只影响该条，整体仍产出报告。
-4. **记忆**：核对结束把核对标准、范围约束、逐条判断、运行摘要与待复核项写入 PowerContext 的 `yj:{project_id}` Scope；同一草稿重复提交 Handoff 幂等。PowerContext 不可用时报告照常生成，`memory.json` 标记 `ok=false`。
+4. **记忆**：核对结束把核对标准、范围约束、逐条判断、运行摘要与待复核项写入 PowerContext 的 `cd:{project_id}` Scope；同一草稿重复提交 Handoff 幂等。PowerContext 不可用时报告照常生成，`memory.json` 标记 `ok=false`。
 5. **Web**：核对与上传都是后台线程任务，前端轮询 `/api/jobs/{id}`；核对与入库各自同一时间只允许一个任务，并发提交返回 409。
 
 ### 1.3 数据模型
@@ -59,7 +61,7 @@ PowerContext：
 
 | 项 | 说明 |
 | --- | --- |
-| Scope | `yj:{bib 相对 data/ 的路径去后缀}`，如 `yj:samples/bib` |
+| Scope | `cd:{bib 相对 data/ 的路径去后缀}`，如 `cd:samples/bib` |
 | Memory kind | `criterion` 标准、`decision` 判断、`constraint` 约束、`next_step` 下一步 |
 | Handoff | 已核对 N/M、下一步、遗漏；信任级别 `untrusted_history` |
 | 去重 | 标准与约束按 `(kind, text)` 去重；判断按 `run_id` 追加 |

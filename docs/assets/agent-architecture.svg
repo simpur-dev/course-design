@@ -422,7 +422,7 @@
   <text x="1282" y="1070" font-size="15" font-weight="700" fill="#1f2937">PowerContext 1.4 · 记忆 · 报告</text>
   <rect x="1598" y="1055" width="46" height="21" rx="10" fill="#e6f4f1"/>
   <text x="1621" y="1070" font-size="10.5" font-weight="600" fill="#0f766e" text-anchor="middle">已有</text>
-  <text x="1282" y="1098" font-size="11.3" fill="#5b6573">Scope yj:{project_id}；标准 / 判断 / 约束 / next_step</text>
+  <text x="1282" y="1098" font-size="11.3" fill="#5b6573">Scope cd:{project_id}；标准 / 判断 / 约束 / next_step</text>
   <text x="1282" y="1124" font-size="11.3" fill="#5b6573">暂停写 next_step + Handoff；continue latest 取回</text>
   <text x="1282" y="1150" font-size="11.3" fill="#5b6573">报告 md / csv / json，四档 + 外部状态分列</text>
   <text x="1282" y="1176" font-size="10.7" fill="#8a8172">Handoff = untrusted_history，不作断点；提交幂等</text>

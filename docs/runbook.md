@@ -17,9 +17,9 @@
 
 - seekdb：`127.0.0.1:2881`（MySQL 协议）
 - PowerContext：`127.0.0.1:8000`（HTTP）
-- Web：`127.0.0.1:8787`（FastAPI，同时提供 API 与 `web/dist`）
+- Web：`127.0.0.1:8787`（FastAPI，同时提供 API 与 `frontend/dist`）
 
-端口被占用时改 `.env` 中 `YINJU_SEEKDB_PORT` / `YINJU_POWERCONTEXT_PORT` / `YINJU_WEB_PORT`，应用与 compose 读同一组变量。
+端口被占用时改 `.env` 中 `APP_SEEKDB_PORT` / `APP_POWERCONTEXT_PORT` / `APP_SERVER_PORT`，应用与 compose 读同一组变量。
 
 ## 2. 配置
 
@@ -31,15 +31,15 @@ cp .env.example .env        # Windows: copy .env.example .env
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
-| `YINJU_SEEKDB_HOST/PORT/USER/PASSWORD/DATABASE` | `127.0.0.1:2881` / root / 空 / `yinju` | 证据库连接 |
-| `YINJU_POWERCONTEXT_HOST/PORT/TOKEN` | `127.0.0.1:8000` / 空 | 记忆服务；仅开启鉴权时需要 token |
-| `YINJU_MEMORY_ENABLED` | `true` | 核对后写入记忆；`audit --no-memory` 单次关闭 |
-| `YINJU_EMBEDDING_PROVIDER` | `local` | 本地 ONNX；当前只实现 local |
-| `YINJU_VERIFIER_PROVIDER` | `none` | `none` 为无 key 基线；`openai` / `anthropic` 需模型与 key |
-| `YINJU_VERIFIER_MODEL` | 空 | LLM 判定模型名 |
-| `YINJU_DATA_DIR` | `data` | 草稿、报告、缓存与上传的根目录 |
-| `YINJU_WEB_HOST/PORT` | `127.0.0.1:8787` | Web 工作台 |
-| `YINJU_WEB_DIR` | `web/dist` | 前端构建产物目录 |
+| `APP_SEEKDB_HOST/PORT/USER/PASSWORD/DATABASE` | `127.0.0.1:2881` / root / 空 / `course_design` | 证据库连接 |
+| `APP_POWERCONTEXT_HOST/PORT/TOKEN` | `127.0.0.1:8000` / 空 | 记忆服务；仅开启鉴权时需要 token |
+| `APP_MEMORY_ENABLED` | `true` | 核对后写入记忆；`audit --no-memory` 单次关闭 |
+| `APP_EMBEDDING_PROVIDER` | `local` | 本地 ONNX；当前只实现 local |
+| `APP_VERIFIER_PROVIDER` | `none` | `none` 为无 key 基线；`openai` / `anthropic` 需模型与 key |
+| `APP_VERIFIER_MODEL` | 空 | LLM 判定模型名 |
+| `APP_DATA_DIR` | `data` | 草稿、报告、缓存与上传的根目录 |
+| `APP_SERVER_HOST/PORT` | `127.0.0.1:8787` | Web 工作台 |
+| `APP_FRONTEND_DIR` | `frontend/dist` | 前端构建产物目录 |
 
 `.env` 已被 `.gitignore` 忽略；密钥只写入本地 `.env`。
 
@@ -55,8 +55,8 @@ docker compose down -v                # 停止并删除数据卷
 
 期望容器：
 
-- `yinju-seekdb-1`：`healthy`，镜像固定为 `quay.io/oceanbase/seekdb@sha256:4db49618…`
-- `yinju-powercontext-1`：`healthy`，镜像由 `deploy/powercontext/Dockerfile` 构建
+- `course-design-seekdb-1`：`healthy`，镜像固定为 `quay.io/oceanbase/seekdb@sha256:4db49618…`
+- `course-design-powercontext-1`：`healthy`，镜像由 `deploy/powercontext/Dockerfile` 构建
 
 PowerContext 镜像构建固定 `powercontext[cli,server]==1.4.0`，默认使用清华 PyPI 镜像；网络不通时覆盖：
 
@@ -67,7 +67,7 @@ docker compose build --build-arg PIP_INDEX_URL=https://pypi.org/simple powercont
 本机已有 `powercontext-server:1.4.0` 时可跳过构建：
 
 ```bash
-docker tag powercontext-server:1.4.0 yinju-powercontext:1.4.0
+docker tag powercontext-server:1.4.0 course-design-powercontext:1.4.0
 docker compose up -d --no-build --wait
 ```
 
@@ -77,7 +77,7 @@ seekdb 无法按 digest 拉取时，可临时把 `docker-compose.yml` 的 `image
 
 ```bash
 uv sync --extra dev
-uv run yinju doctor
+uv run citationproof doctor
 ```
 
 不使用 uv：
@@ -88,7 +88,7 @@ python -m venv .venv
 .venv/bin/pip install -e ".[dev]"        # Linux / macOS
 ```
 
-`doctor` 检查四项：`data` 可写、seekdb 可达与版本、PowerContext 就绪、模型配置。任一失败返回非零退出码并给出 hint。首次入库前 `database=yinju missing` 属正常。
+`doctor` 检查四项：`data` 可写、seekdb 可达与版本、PowerContext 就绪、模型配置。任一失败返回非零退出码并给出 hint。首次入库前 `database=course_design missing` 属正常。
 
 单测与静态检查：
 
@@ -97,17 +97,17 @@ uv run pytest
 uv run ruff check .
 ```
 
-seekdb 集成测试默认跳过，显式开启（会创建并删除临时数据库 `yinju_it_<随机后缀>`）：
+seekdb 集成测试默认跳过，显式开启（会创建并删除临时数据库 `cd_it_<随机后缀>`）：
 
 ```bash
-YINJU_TEST_SEEKDB=1 YINJU_SEEKDB_PORT=2881 uv run pytest \
+APP_TEST_SEEKDB=1 APP_SEEKDB_PORT=2881 uv run pytest \
   tests/test_integration_seekdb.py tests/test_integration_audit.py
 ```
 
 PowerContext 集成测试会向真实服务写入随机项目，建议指向可丢弃实例：
 
 ```bash
-YINJU_TEST_POWERCONTEXT_URL=http://127.0.0.1:18001 uv run pytest \
+APP_TEST_POWERCONTEXT_URL=http://127.0.0.1:18001 uv run pytest \
   tests/test_integration_powercontext.py
 ```
 
@@ -141,11 +141,11 @@ PDF 路径相对 `bib.json` 所在目录。样例在 `data/samples/bib.json`；W
 ### 5.3 命令与计数
 
 ```bash
-uv run yinju ingest --bib data/samples/bib.json
-uv run yinju ingest --bib data/samples/bib.json --force   # 忽略已入库标记，重建
-uv run yinju ingest --key devlin2019                      # 只处理单篇
-uv run yinju papers                                       # 论文与单元计数
-uv run yinju papers --json
+uv run citationproof ingest --bib data/samples/bib.json
+uv run citationproof ingest --bib data/samples/bib.json --force   # 忽略已入库标记，重建
+uv run citationproof ingest --key devlin2019                      # 只处理单篇
+uv run citationproof papers                                       # 论文与单元计数
+uv run citationproof papers --json
 ```
 
 计数口径：
@@ -160,7 +160,7 @@ embedding 缓存位于 `data/runtime/embedding_cache.sqlite3`，按「模型标�
 ## 6. 检索
 
 ```bash
-uv run yinju search "The Transformer follows this overall architecture" \
+uv run citationproof search "The Transformer follows this overall architecture" \
   --paper-key vaswani2017 --unit-type sent --limit 3
 ```
 
@@ -193,7 +193,7 @@ recurrence and convolutions [@vaswani2017].
 ### 7.2 执行
 
 ```bash
-uv run yinju audit \
+uv run citationproof audit \
   --draft data/samples/draft.md \
   --bib data/samples/bib.json \
   --out data/runtime/reports
@@ -205,7 +205,7 @@ uv run yinju audit \
 
 ### 7.3 无 key 基线
 
-`YINJU_VERIFIER_PROVIDER=none` 时：
+`APP_VERIFIER_PROVIDER=none` 时：
 
 - 带单位数字与原文冲突 → `unsupported`；
 - 余弦与覆盖都低于 0.35 → `unsupported`；
@@ -214,7 +214,7 @@ uv run yinju audit \
 - 中等相关 → `partial`（medium）；其余 → `unknown`；
 - **基线永远不出具 `supported`**，报告首屏与 JSON 均带提示。
 
-配置 LLM 判定器需同时设置 `YINJU_VERIFIER_PROVIDER`、`YINJU_VERIFIER_MODEL` 与对应 key；模型必须返回严格 JSON，且 `evidence_id` 必须来自候选集合。
+配置 LLM 判定器需同时设置 `APP_VERIFIER_PROVIDER`、`APP_VERIFIER_MODEL` 与对应 key；模型必须返回严格 JSON，且 `evidence_id` 必须来自候选集合。
 
 ## 8. 报告与记忆
 
@@ -232,7 +232,7 @@ CLI 输出 `claims/citations | supported/partial/unsupported/unknown | review/er
 
 记忆同步（默认开启）：
 
-- Scope 为 `yj:{bib 相对 data/ 的路径去后缀}`，如 `yj:samples/bib`；
+- Scope 为 `cd:{bib 相对 data/ 的路径去后缀}`，如 `cd:samples/bib`；
 - 写入 3 条核对标准、1 条范围约束（按 `(kind, text)` 去重）、每条主张一条 `decision`、一条运行摘要、每个待复核项一条 `next_step`；
 - Handoff 用本地确定性草稿提交，不调用 `/v1/handoff/prepare`，不消耗模型额度；相同草稿重复提交幂等；
 - CLI 成功输出 `memory: project=... scope=... written=... skipped=... handoff=rN`；
@@ -241,10 +241,10 @@ CLI 输出 `claims/citations | supported/partial/unsupported/unknown | review/er
 ## 9. Web 与 API
 
 ```bash
-npm --prefix web install
-npm --prefix web run build
-uv run yinju serve                 # 127.0.0.1:8787
-uv run yinju serve --port 8788
+npm --prefix frontend install
+npm --prefix frontend run build
+uv run citationproof serve                 # 127.0.0.1:8787
+uv run citationproof serve --port 8788
 ```
 
 未构建时首页返回 404 JSON，并提示构建命令。页面为 hash 路由，静态托管无需服务端改路由。
@@ -277,8 +277,8 @@ GET  /api/docs（OpenAPI）
 `data/samples/labels.json` 为人工标注集，每条包含 `id`、`claim`、`citation`、`label`、`evidence_pages`、`evidence_units`、`source`、`notes`。
 
 ```bash
-uv run yinju eval --labels data/samples/labels.json --bib data/samples/bib.json
-uv run yinju eval --labels data/samples/labels.json --bib data/samples/bib.json \
+uv run citationproof eval --labels data/samples/labels.json --bib data/samples/bib.json
+uv run citationproof eval --labels data/samples/labels.json --bib data/samples/bib.json \
   --out data/runtime/eval --json
 ```
 
@@ -297,30 +297,30 @@ uv run yinju eval --labels data/samples/labels.json --bib data/samples/bib.json 
 | 现象 | 处理 |
 | --- | --- |
 | `bind: address already in use` | 改 `.env` 端口；`netstat -ano \| findstr :8000` 查占用 |
-| seekdb 容器启动即退出 | 不要用 Windows 目录 bind mount 挂 `/var/lib/seekdb`，compose 已用命名卷；看 `docker logs yinju-seekdb-1` |
-| PowerContext 返回 401/403 | 默认关闭鉴权且只绑回环；若改过访问模式，在 `.env` 配 `YINJU_POWERCONTEXT_TOKEN` |
-| PowerContext `health/ready` 长时间不通过 | 首次启动需初始化 SQLite，通常 20 s 内就绪；看 `docker logs yinju-powercontext-1` |
+| seekdb 容器启动即退出 | 不要用 Windows 目录 bind mount 挂 `/var/lib/seekdb`，compose 已用命名卷；看 `docker logs course-design-seekdb-1` |
+| PowerContext 返回 401/403 | 默认关闭鉴权且只绑回环；若改过访问模式，在 `.env` 配 `APP_POWERCONTEXT_TOKEN` |
+| PowerContext `health/ready` 长时间不通过 | 首次启动需初始化 SQLite，通常 20 s 内就绪；看 `docker logs course-design-powercontext-1` |
 | Git Bash 下容器路径报 `Permission denied: '/D:'` | MSYS 路径转换所致；加 `MSYS_NO_PATHCONV=1` 或改用 PowerShell |
-| 记忆 API 返回 `memory writes are disabled` | 检查 `YINJU_MEMORY_ENABLED`，它在进程启动时读取，改完需重启 `yinju serve` |
+| 记忆 API 返回 `memory writes are disabled` | 检查 `APP_MEMORY_ENABLED`，它在进程启动时读取，改完需重启 `citationproof serve` |
 | 核对成功但报告显示记忆未写入 | PowerContext 不可达或写入失败；报告不受影响，按 hint 检查容器与端口 |
 | 重跑后记忆条数增加、Handoff 版本递增 | 标准与约束按文本去重；判断与下一步按 `run_id` 追加，属预期 |
 | 相同报告重复提交但版本不变 | PowerContext 对相同 Handoff 草稿幂等 |
-| `seekdb unavailable` | `docker compose up -d seekdb` 后重跑 `yinju doctor`，确认端口一致 |
+| `seekdb unavailable` | `docker compose up -d seekdb` 后重跑 `citationproof doctor`，确认端口一致 |
 | 首次 embedding 很慢 | CPU 嵌入约 5–10 单元/秒；模型约 86 MB 缓存在 `~/.cache/pyseekdb`，之后增量入库约 2 秒，`--force` 全命中缓存约 19 秒 |
 | `no extractable text` | PDF 无可提取文本（扫描件）；本项目不做 OCR |
 | `invalid paper key` / `PDF not found` | 按 §5.1 检查键字符与相对路径 |
-| `embedding provider ... not implemented` | 当前只实现本地 ONNX，设 `YINJU_EMBEDDING_PROVIDER=local` |
+| `embedding provider ... not implemented` | 当前只实现本地 ONNX，设 `APP_EMBEDDING_PROVIDER=local` |
 | `doctor` 说 `database missing` | 首次 ingest 自动建库；持续缺失时检查 seekdb 账号权限 |
 | `no claims with [@key] citations found` | 草稿没有可解析引用；检查 `[@key]` 写法 |
 | `draft cites keys missing from bibliography` | 把缺失键补进 `--bib` 指向的 JSON |
-| `papers not ingested: ...` | 被引论文未入库；按提示执行 `yinju ingest --key ...` |
+| `papers not ingested: ...` | 被引论文未入库；按提示执行 `citationproof ingest --key ...` |
 | 基线全是 `partial`/`unsupported` | `verifier=none` 的设计如此，`supported` 需配置 LLM 判定器 |
 | `labels cite keys missing from bibliography` | 标注集的 `citation` 没写进 `bib.json` |
 | `evidence_units require evidence_pages` | 标注条目给了证据单元却没给证据页；补 `evidence_pages` 或两者都留空 |
-| 首页返回 `frontend is not built` | 先 `npm --prefix web install && npm --prefix web run build` |
+| 首页返回 `frontend is not built` | 先 `npm --prefix frontend install && npm --prefix frontend run build` |
 | 提交核对返回 `409` | 已有同类任务在跑；等待结束或重启服务清空内存队列 |
 | 提交核对返回 `400` | 草稿/书目不在 `data/`、后缀不符或文件不存在；改用页面下拉选择 |
-| 页面仍显示旧版本 | `web/dist` 是构建产物；重新构建后刷新 |
+| 页面仍显示旧版本 | `frontend/dist` 是构建产物；重新构建后刷新 |
 
 ## 12. 数据清理
 
@@ -333,4 +333,4 @@ docker compose down -v
 rm -rf data/runtime data/uploads
 ```
 
-删除后需重新执行 `yinju ingest`（向量缓存也一并清除，需重新计算）。
+删除后需重新执行 `citationproof ingest`（向量缓存也一并清除，需重新计算）。

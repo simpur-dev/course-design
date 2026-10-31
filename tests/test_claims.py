@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from yinju.claims import DraftError, parse_draft
+from backend.audit.claims import DraftError, parse_draft
 
 
 def _draft(tmp_path: Path, text: str) -> Path:

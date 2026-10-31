@@ -3,9 +3,9 @@ from typing import Self
 import httpx
 from pydantic import SecretStr
 
-from yinju import doctor
-from yinju.config import Settings
-from yinju.doctor import (
+from backend.core.config import Settings
+from backend.diagnostics import checks as doctor
+from backend.diagnostics.checks import (
     check_data_dir,
     check_powercontext,
     check_providers,
@@ -30,7 +30,7 @@ class FakeCursor:
     def fetchone(self):
         if "version()" in self.sql:
             return ("5.7.25-OceanBase seekdb-v1.4.0.0",)
-        return ("yinju",) if self.database_exists else None
+        return ("course_design",) if self.database_exists else None
 
 
 class FakeConnection:
@@ -123,7 +123,7 @@ def test_providers_require_key(tmp_path) -> None:
     settings = _settings(tmp_path, embedding_provider="openai", verifier_provider="openai")
     result = check_providers(settings)
     assert not result.ok
-    assert "YINJU_OPENAI_API_KEY" in result.detail
+    assert "APP_OPENAI_API_KEY" in result.detail
 
 
 def test_providers_accept_configured_key(tmp_path) -> None:

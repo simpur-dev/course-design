@@ -6,17 +6,17 @@ from dataclasses import replace
 
 import pytest
 
-from yinju.audit import AuditReport, CitationCheck, ClaimCheck
-from yinju.claims import Claim
-from yinju.memory import sync_with_client
-from yinju.powercontext import PowerContextClient
-from yinju.store import PaperRecord
-from yinju.verdicts import Evidence
+from backend.audit import AuditReport, CitationCheck, ClaimCheck
+from backend.audit.claims import Claim
+from backend.audit.verdicts import Evidence
+from backend.evidence.store import PaperRecord
+from backend.memory import sync_with_client
+from backend.memory.client import PowerContextClient
 
-BASE_URL = os.environ.get("YINJU_TEST_POWERCONTEXT_URL", "")
+BASE_URL = os.environ.get("APP_TEST_POWERCONTEXT_URL", "")
 pytestmark = pytest.mark.skipif(
     not BASE_URL,
-    reason="set YINJU_TEST_POWERCONTEXT_URL to a disposable PowerContext server",
+    reason="set APP_TEST_POWERCONTEXT_URL to a disposable PowerContext server",
 )
 
 PAPER = PaperRecord("bert", "BERT", "Devlin", 2019, "", "b.pdf", "sha", 1, 1, 1, "sent", "now")

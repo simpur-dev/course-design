@@ -13,6 +13,7 @@ def _compose() -> dict:
 def test_compose_services_and_healthchecks() -> None:
     data = _compose()
     services = data["services"]
+    assert data["name"] == "course-design"
     assert set(services) == {"seekdb", "powercontext"}
     assert "@sha256:" in services["seekdb"]["image"]
     assert services["seekdb"]["healthcheck"]["test"]
@@ -25,8 +26,8 @@ def test_compose_uses_configurable_host_ports() -> None:
     services = _compose()["services"]
     seekdb_ports = services["seekdb"]["ports"]
     pc_ports = services["powercontext"]["ports"]
-    assert any("YINJU_SEEKDB_PORT" in port for port in seekdb_ports)
-    assert any("YINJU_POWERCONTEXT_PORT" in port for port in pc_ports)
+    assert any("APP_SEEKDB_PORT" in port for port in seekdb_ports)
+    assert any("APP_POWERCONTEXT_PORT" in port for port in pc_ports)
 
 
 def test_powercontext_dockerfile_is_pinned() -> None:
@@ -45,13 +46,13 @@ def test_env_example_has_no_secrets() -> None:
             continue
         key, value = stripped.split("=", 1)
         values[key] = value
-    assert values["YINJU_SEEKDB_PASSWORD"] == ""
-    assert values["YINJU_OPENAI_API_KEY"] == ""
-    assert values["YINJU_ANTHROPIC_API_KEY"] == ""
+    assert values["APP_SEEKDB_PASSWORD"] == ""
+    assert values["APP_OPENAI_API_KEY"] == ""
+    assert values["APP_ANTHROPIC_API_KEY"] == ""
     assert not any("sk-" in value for value in values.values())
 
 
 def test_project_script_entrypoint() -> None:
     data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert data["project"]["scripts"]["yinju"] == "yinju.cli:app"
+    assert data["project"]["scripts"]["citationproof"] == "backend.cli:app"
     assert data["project"]["requires-python"] == ">=3.11"

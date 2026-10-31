@@ -21,7 +21,7 @@
 | --- | --- |
 | seekdb 1.4.0.0 | 证据库：证据单元（句/段 + 页码）的向量 + IK 全文混合检索，按论文/页码过滤；论文注册表 |
 | PowerContext 1.4.0 | 研究记忆：项目 Scope、核对标准、已确认/推翻的判断、约束、进度 Handoff |
-| FastAPI | 同源提供 `/api/*` 与 `web/dist` 静态页面；核对与入库为后台任务 |
+| FastAPI | 同源提供 `/api/*` 与 `frontend/dist` 静态页面；核对与入库为后台任务 |
 | React 19 + Vite 8 | Web 工作台：核对台、论文库、报告、项目记忆、系统状态 |
 | PyMuPDF + pyseekdb | PDF 分页解析与本地 ONNX 向量（all-MiniLM-L6-v2，384 维） |
 
@@ -34,13 +34,14 @@
 ├── README.md
 ├── docker-compose.yml          # seekdb + PowerContext
 ├── .env.example                # 配置模板（复制为 .env）
-├── pyproject.toml / uv.lock    # Python 依赖（包名 yinju）
+├── pyproject.toml / uv.lock    # Python 依赖（发行名 course-design-backend）
 ├── deploy/powercontext/        # PowerContext 1.4.0 镜像构建
-├── src/yinju/                  # FastAPI、入库、检索、判定、报告、记忆
+├── backend/                    # FastAPI、CLI、入库、检索、判定、报告、记忆
+│   └── agent/                  # 单执行 Agent 内核（当前固定核对管线）
+├── frontend/                   # React + Vite 工作台（app / shared / features）
 ├── tests/                      # pytest（含默认跳过的集成测试）
-├── web/                        # React + Vite 工作台
 ├── data/samples/               # 3 篇样例 PDF、草稿、标注集
-└── docs/                       # 架构说明、运行手册
+└── docs/                       # 架构、接口、分工与运行手册
 ```
 
 ## 部署与运行
@@ -68,9 +69,9 @@ cp .env.example .env            # Windows: copy .env.example .env
 默认配置即可启动。端口被占用时改 `.env`，应用与 compose 读同一组变量，不需要改两处：
 
 ```dotenv
-YINJU_SEEKDB_PORT=2884
-YINJU_POWERCONTEXT_PORT=18000
-YINJU_WEB_PORT=8788
+APP_SEEKDB_PORT=2884
+APP_POWERCONTEXT_PORT=18000
+APP_SERVER_PORT=8788
 ```
 
 ### 2. 启动 seekdb 与 PowerContext
@@ -96,14 +97,14 @@ docker compose build --build-arg PIP_INDEX_URL=https://pypi.org/simple powercont
 
 ```bash
 docker compose exec seekdb mysqladmin ping -h127.0.0.1 -P2881 -uroot -s
-curl http://127.0.0.1:8000/health/ready   # 端口随 .env 的 YINJU_POWERCONTEXT_PORT
+curl http://127.0.0.1:8000/health/ready   # 端口随 .env 的 APP_POWERCONTEXT_PORT
 ```
 
 ### 3. 安装应用并自检
 
 ```bash
 uv sync --extra dev
-uv run yinju doctor
+uv run citationproof doctor
 ```
 
 不使用 uv 时：
@@ -112,26 +113,26 @@ uv run yinju doctor
 python -m venv .venv
 .venv/Scripts/pip install -e ".[dev]"      # Windows
 .venv/bin/pip install -e ".[dev]"          # Linux / macOS
-.venv/Scripts/yinju doctor                 # Windows
-.venv/bin/yinju doctor                     # Linux / macOS
+.venv/Scripts/citationproof doctor                 # Windows
+.venv/bin/citationproof doctor                     # Linux / macOS
 ```
 
 期望输出（端口与库名随 `.env` 变化）：
 
 ```text
 [OK  ] data          .../course-design/data (writable)
-[OK  ] seekdb        5.7.25-OceanBase seekdb-v1.4.0.0; database=yinju missing (created on first ingest)
+[OK  ] seekdb        5.7.25-OceanBase seekdb-v1.4.0.0; database=course_design missing (created on first ingest)
 [OK  ] powercontext  v1.4.0 ready at http://127.0.0.1:8000
 [OK  ] providers     embedding=local verifier=none (model downloads on first ingest)
 ```
 
-`database=... missing` 在首次入库前是正常的，数据库由 `yinju ingest` 自动创建。
+`database=... missing` 在首次入库前是正常的，数据库由 `citationproof ingest` 自动创建。
 
 ### 4. 导入样例论文
 
 ```bash
-uv run yinju ingest --bib data/samples/bib.json
-uv run yinju papers
+uv run citationproof ingest --bib data/samples/bib.json
+uv run citationproof papers
 ```
 
 三篇样例：Transformer（382 单元）、BERT（592 单元）、Photon SIGMOD'22（791 单元）。首次入库会下载 all-MiniLM-L6-v2（约 86 MB）并在 CPU 上计算向量，本机实测约 3 分钟；之后增量入库约 2 秒，`--force` 全量重建命中缓存约 19 秒。
@@ -139,7 +140,7 @@ uv run yinju papers
 ### 5. 运行一次核对
 
 ```bash
-uv run yinju audit \
+uv run citationproof audit \
   --draft data/samples/photon-demo.md \
   --bib data/samples/bib.json \
   --out data/runtime/reports
@@ -158,12 +159,12 @@ report.md / report.csv / report.json     # 结论、原句、页码、检索排�
 ### 6. 启动 Web 工作台
 
 ```bash
-npm --prefix web install
-npm --prefix web run build
-uv run yinju serve
+npm --prefix frontend install
+npm --prefix frontend run build
+uv run citationproof serve
 ```
 
-打开 <http://127.0.0.1:8787>（端口被占用时用 `uv run yinju serve --port 8788` 或改 `YINJU_WEB_PORT`）。页面为 hash 路由：
+打开 <http://127.0.0.1:8787>（端口被占用时用 `uv run citationproof serve --port 8788` 或改 `APP_SERVER_PORT`）。页面为 hash 路由：
 
 | 路由 | 内容 |
 | --- | --- |
@@ -178,9 +179,9 @@ uv run yinju serve
 
 按顺序执行，全部符合即部署成功：
 
-- [ ] `docker compose ps` 中 `yinju-seekdb-1` 与 `yinju-powercontext-1` 均为 `healthy`
-- [ ] `uv run yinju doctor` 输出 4 行 `[OK]`
-- [ ] `uv run yinju papers` 列出 3 篇论文，`UNITS` 合计 1765
+- [ ] `docker compose ps` 中 `course-design-seekdb-1` 与 `course-design-powercontext-1` 均为 `healthy`
+- [ ] `uv run citationproof doctor` 输出 4 行 `[OK]`
+- [ ] `uv run citationproof papers` 列出 3 篇论文，`UNITS` 合计 1765
 - [ ] 核对命令输出 4 `partial` + 1 `unsupported`，报告目录含 3 个文件
 - [ ] 命令末尾 `memory:` 摘要显示 `written` 大于 0（PowerContext 可用时）
 - [ ] 浏览器打开 `#/memory` 能看到本次写入的判断与「继续上次核对」
@@ -192,29 +193,29 @@ uv run yinju serve
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
-| `YINJU_SEEKDB_HOST/PORT` | `127.0.0.1:2881` | seekdb 地址，同时决定 compose 端口映射 |
-| `YINJU_SEEKDB_PASSWORD` | 空 | seekdb 仅本机开发使用，勿暴露公网 |
-| `YINJU_POWERCONTEXT_HOST/PORT` | `127.0.0.1:8000` | PowerContext 地址 |
-| `YINJU_MEMORY_ENABLED` | `true` | 核对后写入项目记忆；`audit --no-memory` 可单次关闭 |
-| `YINJU_EMBEDDING_PROVIDER` | `local` | 本地 ONNX 向量，无需 key |
-| `YINJU_VERIFIER_PROVIDER` | `none` | 无 key 基线；`openai` / `anthropic` 需同时配置模型与 key |
-| `YINJU_WEB_HOST/PORT` | `127.0.0.1:8787` | Web 工作台监听地址 |
+| `APP_SEEKDB_HOST/PORT` | `127.0.0.1:2881` | seekdb 地址，同时决定 compose 端口映射 |
+| `APP_SEEKDB_PASSWORD` | 空 | seekdb 仅本机开发使用，勿暴露公网 |
+| `APP_POWERCONTEXT_HOST/PORT` | `127.0.0.1:8000` | PowerContext 地址 |
+| `APP_MEMORY_ENABLED` | `true` | 核对后写入项目记忆；`audit --no-memory` 可单次关闭 |
+| `APP_EMBEDDING_PROVIDER` | `local` | 本地 ONNX 向量，无需 key |
+| `APP_VERIFIER_PROVIDER` | `none` | 无 key 基线；`openai` / `anthropic` 需同时配置模型与 key |
+| `APP_SERVER_HOST/PORT` | `127.0.0.1:8787` | Web 工作台监听地址 |
 
 密钥只写进 `.env`，`.env` 已被 `.gitignore` 忽略。
 
 ## 常用命令
 
 ```bash
-uv run yinju doctor                                  # 自检
-uv run yinju ingest --bib data/samples/bib.json      # 入库（增量）
-uv run yinju ingest --bib data/samples/bib.json --force
-uv run yinju papers                                  # 论文与单元计数
-uv run yinju search "The Transformer follows this overall architecture" \
+uv run citationproof doctor                                  # 自检
+uv run citationproof ingest --bib data/samples/bib.json      # 入库（增量）
+uv run citationproof ingest --bib data/samples/bib.json --force
+uv run citationproof papers                                  # 论文与单元计数
+uv run citationproof search "The Transformer follows this overall architecture" \
   --paper-key vaswani2017 --unit-type sent --limit 3
-uv run yinju audit --draft data/samples/draft.md \
+uv run citationproof audit --draft data/samples/draft.md \
   --bib data/samples/bib.json --out data/runtime/reports
-uv run yinju eval --labels data/samples/labels.json --bib data/samples/bib.json
-uv run yinju serve
+uv run citationproof eval --labels data/samples/labels.json --bib data/samples/bib.json
+uv run citationproof serve
 uv run pytest                                        # 单测；seekdb/PowerContext 集成测试默认跳过
 uv run ruff check .
 ```
@@ -222,8 +223,8 @@ uv run ruff check .
 集成测试需要真实服务：
 
 ```bash
-YINJU_TEST_SEEKDB=1 uv run pytest tests/test_integration_seekdb.py tests/test_integration_audit.py
-YINJU_TEST_POWERCONTEXT_URL=http://127.0.0.1:18001 uv run pytest tests/test_integration_powercontext.py
+APP_TEST_SEEKDB=1 uv run pytest tests/test_integration_seekdb.py tests/test_integration_audit.py
+APP_TEST_POWERCONTEXT_URL=http://127.0.0.1:18001 uv run pytest tests/test_integration_powercontext.py
 ```
 
 ## 数据与产物
@@ -253,15 +254,17 @@ rm -rf data/runtime data/uploads
 | embedding 模型下载失败 | 默认使用 `hf-mirror.com`；可显式设置 `HF_ENDPOINT=https://hf-mirror.com` 后重试 |
 | `doctor` 报 seekdb 不可达 | 先 `docker compose up -d seekdb`，确认 `.env` 端口与 `docker compose ps` 一致 |
 | 记忆未写入但核对成功 | PowerContext 不可达时属预期；CLI 摘要会带错误，Web 报告的 `memory.json` 带错误与 hint |
-| 首页返回 `frontend is not built` | 先执行 `npm --prefix web install && npm --prefix web run build` |
+| 首页返回 `frontend is not built` | 先执行 `npm --prefix frontend install && npm --prefix frontend run build` |
 
 更多故障排查见 [docs/runbook.md](docs/runbook.md#11-故障排查)。
 
 ## 文档
 
 - [docs/architecture.md](docs/architecture.md)：当前实现架构、数据模型、目标架构
+- [docs/interfaces.md](docs/interfaces.md)：后端/前端模块边界、公共接口、数据契约与测试契约
+- [docs/team-division.md](docs/team-division.md)：三人分工、并行规则与验收标准
 - [docs/runbook.md](docs/runbook.md)：配置、入库/检索/判定口径、Web 与 API、评测、故障排查
-- [web/README.md](web/README.md)：前端结构与路由
+- [frontend/README.md](frontend/README.md)：前端结构与路由
 
 ## 已知限制
 

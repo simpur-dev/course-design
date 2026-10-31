@@ -1,4 +1,4 @@
-from yinju.terms import (
+from backend.audit.terms import (
     extract_keywords,
     extract_numbers,
     keyword_coverage,

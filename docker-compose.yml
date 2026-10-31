@@ -1,10 +1,10 @@
-name: yinju
+name: course-design
 
 services:
   seekdb:
     image: quay.io/oceanbase/seekdb@sha256:4db4961869d554313520d6081fca29265ba6da6db7313311bd8acbed771a956b
     ports:
-      - "127.0.0.1:${YINJU_SEEKDB_PORT:-2881}:2881"
+      - "127.0.0.1:${APP_SEEKDB_PORT:-2881}:2881"
     environment:
       MEMORY_LIMIT: 2G
     volumes:
@@ -19,11 +19,11 @@ services:
       retries: 30
 
   powercontext:
-    image: ${YINJU_POWERCONTEXT_IMAGE:-yinju-powercontext:1.4.0}
+    image: ${APP_POWERCONTEXT_IMAGE:-course-design-powercontext:1.4.0}
     build:
       context: ./deploy/powercontext
     ports:
-      - "127.0.0.1:${YINJU_POWERCONTEXT_PORT:-8000}:8000"
+      - "127.0.0.1:${APP_POWERCONTEXT_PORT:-8000}:8000"
     environment:
       POWERCONTEXT_HOME: /data
       POWERCONTEXT_SERVER_HTTP_HOST: 0.0.0.0

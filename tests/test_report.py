@@ -2,11 +2,11 @@ import csv
 import io
 import json
 
-from yinju.audit import AuditReport, CitationCheck, ClaimCheck
-from yinju.claims import Claim
-from yinju.report import report_to_csv, report_to_dict, report_to_markdown, write_reports
-from yinju.store import HybridHit, PaperRecord
-from yinju.verdicts import Evidence
+from backend.audit import AuditReport, CitationCheck, ClaimCheck
+from backend.audit.claims import Claim
+from backend.audit.report import report_to_csv, report_to_dict, report_to_markdown, write_reports
+from backend.audit.verdicts import Evidence
+from backend.evidence.store import HybridHit, PaperRecord
 
 
 def _paper(key: str) -> PaperRecord:

@@ -5,7 +5,7 @@ import json
 import httpx
 import pytest
 
-from yinju.powercontext import MemoryEntry, PowerContextClient, PowerContextError
+from backend.memory.client import MemoryEntry, PowerContextClient, PowerContextError
 
 
 def _entry_payload(entry: MemoryEntry) -> dict:
@@ -85,8 +85,8 @@ def test_scope_remember_list_and_search(fake_powercontext) -> None:
     seen: list[httpx.Request] = []
     client = _client(fake_powercontext, seen)
 
-    scope = client.ensure_scope("yj:samples/bib", "引据项目 samples/bib")
-    again = client.ensure_scope("yj:samples/bib", "引据项目 samples/bib")
+    scope = client.ensure_scope("cd:samples/bib", "引据项目 samples/bib")
+    again = client.ensure_scope("cd:samples/bib", "引据项目 samples/bib")
     assert scope["scope_id"] == again["scope_id"] == "scp_1"
 
     records = client.remember(scope["scope_id"], "criterion", "证据必须给出页码", reason="test")
@@ -101,13 +101,13 @@ def test_scope_remember_list_and_search(fake_powercontext) -> None:
 
     assert seen[0].headers["authorization"] == "Bearer test-token"
     assert seen[0].method == "POST"
-    assert json.loads(seen[0].content)["idempotency_key"] == "yj:samples/bib"
+    assert json.loads(seen[0].content)["idempotency_key"] == "cd:samples/bib"
 
 
 def test_commit_handoff_roundtrip(fake_powercontext) -> None:
     seen: list[httpx.Request] = []
     client = _client(fake_powercontext, seen)
-    scope = client.ensure_scope("yj:samples/bib", "summary")
+    scope = client.ensure_scope("cd:samples/bib", "summary")
     entry = client.remember(scope["scope_id"], "decision", "claim-1 partial")[0]
     draft = {
         "objective": "继续核对草稿",
@@ -223,5 +223,5 @@ def test_connection_error_mentions_docker() -> None:
         client=httpx.Client(transport=httpx.MockTransport(handler), timeout=1.0),
     )
     with pytest.raises(PowerContextError) as caught:
-        client.ensure_scope("yj:x", "summary")
+        client.ensure_scope("cd:x", "summary")
     assert "docker compose up -d powercontext" in (caught.value.hint or "")

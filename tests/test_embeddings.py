@@ -1,6 +1,11 @@
 import pytest
 
-from yinju.embeddings import EmbeddingCache, EmbeddingError, embedding_dimension, embedding_model_id
+from backend.evidence.embeddings import (
+    EmbeddingCache,
+    EmbeddingError,
+    embedding_dimension,
+    embedding_model_id,
+)
 
 
 class FakeEmbedder:

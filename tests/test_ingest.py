@@ -1,9 +1,9 @@
 import pytest
 
-from yinju.bibliography import PaperRef
-from yinju.embeddings import EmbedResult
-from yinju.ingest import ingest_bibliography, ingest_paper
-from yinju.store import PaperRecord
+from backend.evidence.bibliography import PaperRef
+from backend.evidence.embeddings import EmbedResult
+from backend.evidence.ingest import ingest_bibliography, ingest_paper
+from backend.evidence.store import PaperRecord
 
 
 class FakeStore:

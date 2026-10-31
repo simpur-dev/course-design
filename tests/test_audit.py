@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from yinju.audit import AuditEngine, AuditError
-from yinju.bibliography import PaperRef
-from yinju.claims import Claim
-from yinju.embeddings import EmbedResult
-from yinju.store import HybridHit, PaperRecord, UnitRow
-from yinju.verdicts import Verdict
+from backend.audit import AuditEngine, AuditError
+from backend.audit.claims import Claim
+from backend.audit.verdicts import Verdict
+from backend.evidence.bibliography import PaperRef
+from backend.evidence.embeddings import EmbedResult
+from backend.evidence.store import HybridHit, PaperRecord, UnitRow
 
 
 class FakeCache:

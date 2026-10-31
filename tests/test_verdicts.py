@@ -2,8 +2,8 @@ import json
 
 import httpx
 
-from yinju import verdicts
-from yinju.verdicts import BaselineVerifier, ChatVerifier, Evidence
+from backend.audit import verdicts
+from backend.audit.verdicts import BaselineVerifier, ChatVerifier, Evidence
 
 
 def _evidence(

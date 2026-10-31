@@ -1,7 +1,7 @@
 import pymupdf
 import pytest
 
-from yinju.powercontext import HandoffView, MemoryEntry
+from backend.memory.client import HandoffView, MemoryEntry
 
 
 class FakePowerContext:
@@ -26,7 +26,7 @@ class FakePowerContext:
             }
         return self.scopes[title]
 
-    def list_scopes(self, prefix: str = "yj:") -> list[dict]:
+    def list_scopes(self, prefix: str = "cd:") -> list[dict]:
         return [scope for title, scope in self.scopes.items() if title.startswith(prefix)]
 
     def remember(

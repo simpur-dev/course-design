@@ -3,10 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from yinju.audit import AuditEngine
-from yinju.bibliography import PaperRef
-from yinju.embeddings import EmbedResult
-from yinju.evaluation import (
+from backend.audit import AuditEngine
+from backend.audit.evaluation import (
     ItemResult,
     LabeledItem,
     LabeledSet,
@@ -18,8 +16,10 @@ from yinju.evaluation import (
     load_labeled_set,
     write_evaluation,
 )
-from yinju.store import HybridHit, PaperRecord, UnitRow
-from yinju.verdicts import Verdict
+from backend.audit.verdicts import Verdict
+from backend.evidence.bibliography import PaperRef
+from backend.evidence.embeddings import EmbedResult
+from backend.evidence.store import HybridHit, PaperRecord, UnitRow
 
 
 class FakeCache:

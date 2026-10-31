@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from yinju.bibliography import BibliographyError, load_bibliography
+from backend.evidence.bibliography import BibliographyError, load_bibliography
 
 
 def _write(path, payload) -> None:

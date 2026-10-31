@@ -1,7 +1,7 @@
 import pytest
 
-from yinju.config import Settings
-from yinju.store import EvidenceStore
+from backend.core.config import Settings
+from backend.evidence.store import EvidenceStore
 
 
 def _result(ids, distances):

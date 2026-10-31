@@ -5,19 +5,19 @@ from pathlib import Path
 import pytest
 from pyseekdb import AdminClient, DefaultEmbeddingFunction
 
-from yinju.audit import AuditEngine
-from yinju.bibliography import PaperRef
-from yinju.claims import Claim
-from yinju.config import Settings
-from yinju.embeddings import EmbeddingCache, embedding_model_id
-from yinju.ingest import ingest_bibliography
-from yinju.store import EvidenceStore
-from yinju.terms import extract_keywords
-from yinju.verdicts import BaselineVerifier
+from backend.audit import AuditEngine
+from backend.audit.claims import Claim
+from backend.audit.terms import extract_keywords
+from backend.audit.verdicts import BaselineVerifier
+from backend.core.config import Settings
+from backend.evidence.bibliography import PaperRef
+from backend.evidence.embeddings import EmbeddingCache, embedding_model_id
+from backend.evidence.ingest import ingest_bibliography
+from backend.evidence.store import EvidenceStore
 
 pytestmark = pytest.mark.skipif(
-    os.environ.get("YINJU_TEST_SEEKDB") != "1",
-    reason="set YINJU_TEST_SEEKDB=1 (and YINJU_SEEKDB_PORT) to run seekdb integration tests",
+    os.environ.get("APP_TEST_SEEKDB") != "1",
+    reason="set APP_TEST_SEEKDB=1 (and APP_SEEKDB_PORT) to run seekdb integration tests",
 )
 
 
@@ -44,7 +44,7 @@ def test_hybrid_audit_stays_inside_cited_paper(tmp_path, make_pdf) -> None:
     )
     refs = {"alpha": _ref(alpha, "alpha"), "beta": _ref(beta, "beta")}
 
-    database = f"yinju_it_{uuid.uuid4().hex[:10]}"
+    database = f"cd_it_{uuid.uuid4().hex[:10]}"
     settings = Settings(seekdb_database=database, _env_file=None)
     admin = AdminClient(
         host=settings.seekdb_host,

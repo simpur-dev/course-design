@@ -5,15 +5,15 @@ from pathlib import Path
 import pytest
 from pyseekdb import AdminClient, DefaultEmbeddingFunction
 
-from yinju.bibliography import PaperRef
-from yinju.config import Settings
-from yinju.embeddings import EmbeddingCache
-from yinju.ingest import ingest_bibliography
-from yinju.store import EvidenceStore
+from backend.core.config import Settings
+from backend.evidence.bibliography import PaperRef
+from backend.evidence.embeddings import EmbeddingCache
+from backend.evidence.ingest import ingest_bibliography
+from backend.evidence.store import EvidenceStore
 
 pytestmark = pytest.mark.skipif(
-    os.environ.get("YINJU_TEST_SEEKDB") != "1",
-    reason="set YINJU_TEST_SEEKDB=1 (and YINJU_SEEKDB_PORT) to run seekdb integration tests",
+    os.environ.get("APP_TEST_SEEKDB") != "1",
+    reason="set APP_TEST_SEEKDB=1 (and APP_SEEKDB_PORT) to run seekdb integration tests",
 )
 
 
@@ -40,7 +40,7 @@ def test_ingest_filter_and_embedding_cache(tmp_path, make_pdf) -> None:
     )
     refs = {"alpha": _ref(alpha, "alpha"), "beta": _ref(beta, "beta")}
 
-    database = f"yinju_it_{uuid.uuid4().hex[:10]}"
+    database = f"cd_it_{uuid.uuid4().hex[:10]}"
     settings = Settings(seekdb_database=database, _env_file=None)
     admin = AdminClient(
         host=settings.seekdb_host,

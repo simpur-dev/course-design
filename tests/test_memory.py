@@ -5,11 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from yinju import memory as memory_module
-from yinju.audit import AuditReport, CitationCheck, ClaimCheck
-from yinju.claims import Claim
-from yinju.config import Settings
-from yinju.memory import (
+from backend import memory as memory_module
+from backend.audit import AuditReport, CitationCheck, ClaimCheck
+from backend.audit.claims import Claim
+from backend.audit.verdicts import Evidence
+from backend.core.config import Settings
+from backend.evidence.store import PaperRecord
+from backend.memory import (
     build_handoff_draft,
     claim_decision_text,
     is_pending,
@@ -20,9 +22,7 @@ from yinju.memory import (
     sync_with_client,
     validate_project_id,
 )
-from yinju.powercontext import PowerContextError
-from yinju.store import PaperRecord
-from yinju.verdicts import Evidence
+from backend.memory.client import PowerContextError
 
 PAPER = PaperRecord(
     paper_key="bert",
@@ -104,7 +104,7 @@ def test_project_ids_are_path_scoped(tmp_path: Path) -> None:
     bib = data / "samples" / "bib.json"
     assert project_id_for_path(data, bib) == "samples/bib"
     assert project_id_for_path(data, tmp_path / "outside.json") == "outside"
-    assert scope_title("samples/bib") == "yj:samples/bib"
+    assert scope_title("samples/bib") == "cd:samples/bib"
     with pytest.raises(ValueError):
         validate_project_id("../escape")
     with pytest.raises(ValueError):
@@ -288,7 +288,7 @@ def test_sync_disabled_and_unavailable(tmp_path: Path, monkeypatch) -> None:
         def close(self) -> None:
             pass
 
-    monkeypatch.setattr(memory_module, "PowerContextClient", BrokenClient)
+    monkeypatch.setattr(memory_module.sync, "PowerContextClient", BrokenClient)
     enabled = Settings(_env_file=None, data_dir=tmp_path / "data", memory_enabled=True)
     failed = sync_report_memory(enabled, _report(), tmp_path / "data" / "samples" / "bib.json")
     assert failed.ok is False

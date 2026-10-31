@@ -1,6 +1,6 @@
 import pytest
 
-from yinju.units import (
+from backend.evidence.units import (
     MAX_PARAGRAPH_CHARS,
     UNIT_PARA,
     UNIT_SENT,

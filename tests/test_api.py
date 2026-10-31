@@ -4,13 +4,15 @@ import time
 
 from fastapi.testclient import TestClient
 
-from yinju import api
-from yinju.api import create_app
-from yinju.config import Settings
-from yinju.doctor import Check
-from yinju.powercontext import PowerContextError
-from yinju.runtime import RuntimeConfigError
-from yinju.store import EvidenceStore
+from backend.api import create_app
+from backend.api.routes import system as system_routes
+from backend.api.services import memory as memory_service
+from backend.api.services import uploads as uploads_service
+from backend.core.config import Settings
+from backend.diagnostics.checks import Check
+from backend.evidence.store import EvidenceStore
+from backend.memory.client import PowerContextError
+from backend.runtime.providers import RuntimeConfigError
 
 
 def _data(tmp_path):
@@ -31,11 +33,11 @@ def _data(tmp_path):
     return data
 
 
-def _client(tmp_path, runner=None, web_dir=None, ingest_runner=None):
+def _client(tmp_path, runner=None, frontend_dir=None, ingest_runner=None):
     settings = Settings(
         _env_file=None,
         data_dir=_data(tmp_path),
-        web_dir=web_dir or tmp_path / "missing-web",
+        frontend_dir=frontend_dir or tmp_path / "missing-frontend",
     )
     app = create_app(settings, runner=runner, ingest_runner=ingest_runner)
     return TestClient(app), settings
@@ -84,7 +86,7 @@ def test_config_and_unbuilt_frontend(tmp_path) -> None:
     config = client.get("/api/config").json()
     assert config["baseline"] is True
     assert config["memory_enabled"] is True
-    assert config["web_built"] is False
+    assert config["frontend_built"] is False
     response = client.get("/")
     assert response.status_code == 404
     assert "前端尚未构建" in response.json()["message"]
@@ -238,7 +240,7 @@ def test_papers_reports_health_and_static(tmp_path) -> None:
     (dist / "index.html").write_text("<html>app</html>", encoding="utf-8")
     (dist / "assets" / "app.js").write_text("console.log('app')", encoding="utf-8")
 
-    client, _ = _client(tmp_path, web_dir=dist)
+    client, _ = _client(tmp_path, frontend_dir=dist)
 
     listed = client.get("/api/reports").json()["reports"]
     assert [item["run_id"] for item in listed] == ["20261026T120000000000Z"]
@@ -267,12 +269,12 @@ def test_papers_reports_health_and_static(tmp_path) -> None:
         Check("data", True, "ok"),
         Check("powercontext", False, "down", "start it"),
     ]
-    original = api.run_checks
-    api.run_checks = lambda settings: checks
+    original = system_routes.run_checks
+    system_routes.run_checks = lambda settings: checks
     try:
         health = client.get("/api/health").json()
     finally:
-        api.run_checks = original
+        system_routes.run_checks = original
     assert health["ok"] is False
     assert health["checks"][1]["hint"] == "start it"
 
@@ -288,12 +290,12 @@ def test_papers_surfaces_seekdb_failure(tmp_path, monkeypatch) -> None:
     assert response.status_code == 503
     detail = response.json()["detail"]
     assert detail["message"].startswith("seekdb 不可用：RuntimeError: db down")
-    assert "yinju ingest" in detail["hint"]
+    assert "citationproof ingest" in detail["hint"]
 
 
 def test_memory_endpoints_roundtrip(tmp_path, monkeypatch, fake_powercontext) -> None:
     client, _ = _client(tmp_path)
-    monkeypatch.setattr(api, "_powercontext_client", lambda settings: fake_powercontext)
+    monkeypatch.setattr(memory_service, "_powercontext_client", lambda settings: fake_powercontext)
 
     projects = client.get("/api/memory/projects").json()
     assert projects["default"] == "samples/bib"
@@ -302,7 +304,7 @@ def test_memory_endpoints_roundtrip(tmp_path, monkeypatch, fake_powercontext) ->
 
     empty = client.get("/api/memory").json()
     assert empty["project"] == "samples/bib"
-    assert empty["scope"]["title"] == "yj:samples/bib"
+    assert empty["scope"]["title"] == "cd:samples/bib"
     assert empty["handoff"]["status"] == "empty"
     assert empty["entries"] == []
 
@@ -355,8 +357,8 @@ def test_memory_endpoint_pages_past_previous_cap(
     tmp_path, monkeypatch, fake_powercontext
 ) -> None:
     client, _ = _client(tmp_path)
-    monkeypatch.setattr(api, "_powercontext_client", lambda settings: fake_powercontext)
-    scope = fake_powercontext.ensure_scope("yj:samples/bib", "引据项目 samples/bib")
+    monkeypatch.setattr(memory_service, "_powercontext_client", lambda settings: fake_powercontext)
+    scope = fake_powercontext.ensure_scope("cd:samples/bib", "引据项目 samples/bib")
     for index in range(620):
         fake_powercontext.remember(scope["scope_id"], "criterion", f"标准 {index}")
     for index in range(3):
@@ -392,7 +394,7 @@ def test_memory_endpoint_pages_past_previous_cap(
 
 def test_memory_endpoints_validate_input(tmp_path, monkeypatch, fake_powercontext) -> None:
     client, _ = _client(tmp_path)
-    monkeypatch.setattr(api, "_powercontext_client", lambda settings: fake_powercontext)
+    monkeypatch.setattr(memory_service, "_powercontext_client", lambda settings: fake_powercontext)
 
     bad_kind = client.post(
         "/api/memory/entries",
@@ -413,13 +415,13 @@ def test_memory_surfaces_powercontext_failure(tmp_path, monkeypatch) -> None:
     client, _ = _client(tmp_path)
 
     class Broken:
-        def list_scopes(self, prefix: str = "yj:") -> list[dict]:
+        def list_scopes(self, prefix: str = "cd:") -> list[dict]:
             raise PowerContextError("connection refused", "docker compose up -d powercontext")
 
         def close(self) -> None:
             pass
 
-    monkeypatch.setattr(api, "_powercontext_client", lambda settings: Broken())
+    monkeypatch.setattr(memory_service, "_powercontext_client", lambda settings: Broken())
     response = client.get("/api/memory/projects")
     assert response.status_code == 503
     detail = response.json()["detail"]
@@ -491,7 +493,7 @@ def test_upload_rejects_bad_payloads(tmp_path, monkeypatch) -> None:
     empty = _upload(client, body=b"")
     assert empty.status_code == 400
 
-    monkeypatch.setattr(api, "MAX_UPLOAD_BYTES", 64)
+    monkeypatch.setattr(uploads_service, "MAX_UPLOAD_BYTES", 64)
     too_big = _upload(client, body=b"%PDF-1.4\n" + b"x" * 100)
     assert too_big.status_code == 413
     assert "不能超过" in too_big.json()["detail"]["message"]
