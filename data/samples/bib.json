@@ -1,0 +1,23 @@
+{
+  "vaswani2017": {
+    "file": "papers/1706.03762.pdf",
+    "title": "Attention Is All You Need",
+    "authors": "Ashish Vaswani et al.",
+    "year": 2017,
+    "source_url": "https://arxiv.org/abs/1706.03762"
+  },
+  "devlin2019": {
+    "file": "papers/1810.04805.pdf",
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "authors": "Jacob Devlin et al.",
+    "year": 2019,
+    "source_url": "https://arxiv.org/abs/1810.04805"
+  },
+  "behm2022": {
+    "file": "papers/photon-sigmod2022.pdf",
+    "title": "Photon: A Fast Query Engine for Lakehouse Systems",
+    "authors": "Alexander Behm et al.",
+    "year": 2022,
+    "source_url": "https://doi.org/10.1145/3514221.3526054"
+  }
+}

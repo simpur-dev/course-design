@@ -1,0 +1,166 @@
+{
+  "name": "samples-v1",
+  "description": "两篇开放获取样例论文上的人工标注集：9 条有支持、7 条无支持或被引论文内相反。标签、页码与证据单元由作者依据 arXiv PDF 原文标注，不是独立双人标注。",
+  "items": [
+    {
+      "id": "s01",
+      "claim": "The Transformer relies entirely on attention mechanisms and dispenses with recurrence and convolutions.",
+      "citation": "vaswani2017",
+      "label": "supported",
+      "evidence_pages": [1, 2],
+      "evidence_units": ["vaswani2017:p1:sent5", "vaswani2017:p2:sent19"],
+      "source": "docs/01-选题与方案.md §9",
+      "notes": "p1 摘要直接给出 solely on attention mechanisms；p2 明确 without using sequence-aligned RNNs or convolutions。"
+    },
+    {
+      "id": "s02",
+      "claim": "BERT uses a bidirectional Transformer encoder and is pre-trained with masked language modeling and next sentence prediction.",
+      "citation": "devlin2019",
+      "label": "supported",
+      "evidence_pages": [2, 4],
+      "evidence_units": ["devlin2019:p2:sent5", "devlin2019:p4:sent31"],
+      "source": "docs/01-选题与方案.md §9",
+      "notes": "p2 说明 masked language models 带来 deep bidirectional representations；p4 描述 next sentence prediction 预训练任务。"
+    },
+    {
+      "id": "s03",
+      "claim": "BERT's largest model has 340 million parameters.",
+      "citation": "devlin2019",
+      "label": "supported",
+      "evidence_pages": [8],
+      "evidence_units": ["devlin2019:p8:sent27"],
+      "source": "docs/01-选题与方案.md §9",
+      "notes": "原文：BERTBASE contains 110M parameters and BERTLARGE contains 340M parameters。"
+    },
+    {
+      "id": "s04",
+      "claim": "The Transformer encoder is composed of a stack of six identical layers.",
+      "citation": "vaswani2017",
+      "label": "supported",
+      "evidence_pages": [3],
+      "evidence_units": ["vaswani2017:p3:sent3"],
+      "source": "author-annotated",
+      "notes": "原文：The encoder is composed of a stack of N = 6 identical layers。"
+    },
+    {
+      "id": "s05",
+      "claim": "The Transformer employs eight parallel attention heads.",
+      "citation": "vaswani2017",
+      "label": "supported",
+      "evidence_pages": [5],
+      "evidence_units": ["vaswani2017:p5:sent6"],
+      "source": "author-annotated",
+      "notes": "原文：In this work we employ h = 8 parallel attention layers, or heads。"
+    },
+    {
+      "id": "s06",
+      "claim": "The Transformer achieves 28.4 BLEU on the WMT 2014 English-to-German translation task.",
+      "citation": "vaswani2017",
+      "label": "supported",
+      "evidence_pages": [1, 8],
+      "evidence_units": ["vaswani2017:p1:sent7", "vaswani2017:p8:sent7"],
+      "source": "author-annotated",
+      "notes": "p1 与 p8 均给出 28.4 BLEU 的英德结果。"
+    },
+    {
+      "id": "s07",
+      "claim": "BERT is pre-trained on BooksCorpus with 800 million words and English Wikipedia with 2,500 million words.",
+      "citation": "devlin2019",
+      "label": "supported",
+      "evidence_pages": [5],
+      "evidence_units": ["devlin2019:p5:sent6"],
+      "source": "author-annotated",
+      "notes": "原文：BooksCorpus (800M words) and English Wikipedia (2,500M words)。"
+    },
+    {
+      "id": "s08",
+      "claim": "BERT is pre-trained for about 40 epochs over a 3.3 billion word corpus.",
+      "citation": "devlin2019",
+      "label": "supported",
+      "evidence_pages": [13],
+      "evidence_units": ["devlin2019:p13:sent22"],
+      "source": "author-annotated",
+      "notes": "原文：approximately 40 epochs over the 3.3 billion word corpus。"
+    },
+    {
+      "id": "s09",
+      "claim": "The Transformer uses label smoothing with a value of 0.1.",
+      "citation": "vaswani2017",
+      "label": "supported",
+      "evidence_pages": [8],
+      "evidence_units": ["vaswani2017:p8:sent5"],
+      "source": "author-annotated",
+      "notes": "原文：we employed label smoothing of value εls = 0.1。"
+    },
+    {
+      "id": "u01",
+      "claim": "The Transformer was pre-trained on 3.3 billion tokens from BooksCorpus and English Wikipedia.",
+      "citation": "vaswani2017",
+      "label": "unsupported",
+      "evidence_pages": [],
+      "evidence_units": [],
+      "source": "docs/01-选题与方案.md §9",
+      "notes": "被引论文没有该预训练语料与规模；3.3 billion words 属 BERT（devlin2019 p13），且原文单位是 words 不是 tokens。无支持内容可定位，因此不标证据页。"
+    },
+    {
+      "id": "u02",
+      "claim": "BERT uses a unidirectional Transformer encoder.",
+      "citation": "devlin2019",
+      "label": "unsupported",
+      "evidence_pages": [2, 3],
+      "evidence_units": ["devlin2019:p2:sent5", "devlin2019:p3:sent30"],
+      "source": "author-annotated",
+      "notes": "原文明确 BERT 使用 bidirectional self-attention；unidirectional 是 GPT 的设定。"
+    },
+    {
+      "id": "u03",
+      "claim": "The Transformer's largest model has 340 million parameters.",
+      "citation": "vaswani2017",
+      "label": "unsupported",
+      "evidence_pages": [],
+      "evidence_units": [],
+      "source": "author-annotated",
+      "notes": "340M 是 BERT-large（devlin2019 p8）的参数规模，被误归到 Transformer；被引论文内无此说法，无可定位证据页。"
+    },
+    {
+      "id": "u04",
+      "claim": "The Transformer was trained for 3.5 days on 64 GPUs.",
+      "citation": "vaswani2017",
+      "label": "unsupported",
+      "evidence_pages": [1],
+      "evidence_units": ["vaswani2017:p1:sent8"],
+      "source": "author-annotated",
+      "notes": "原文为 3.5 days on eight GPUs，GPU 数量被放大。"
+    },
+    {
+      "id": "u05",
+      "claim": "BERT was pre-trained on a corpus of 3.3 billion sentences.",
+      "citation": "devlin2019",
+      "label": "unsupported",
+      "evidence_pages": [13],
+      "evidence_units": ["devlin2019:p13:sent22"],
+      "source": "author-annotated",
+      "notes": "原文单位是 3.3 billion words；句子数并未在该句出现。"
+    },
+    {
+      "id": "u06",
+      "claim": "The Transformer replaced self-attention with recurrent layers.",
+      "citation": "vaswani2017",
+      "label": "unsupported",
+      "evidence_pages": [10],
+      "evidence_units": ["vaswani2017:p10:sent7"],
+      "source": "author-annotated",
+      "notes": "原文方向相反：replacing the recurrent layers ... with multi-headed self-attention。"
+    },
+    {
+      "id": "u07",
+      "claim": "BERT is pre-trained with a left-to-right language model.",
+      "citation": "devlin2019",
+      "label": "unsupported",
+      "evidence_pages": [1, 3],
+      "evidence_units": ["devlin2019:p1:sent13", "devlin2019:p3:sent30"],
+      "source": "author-annotated",
+      "notes": "原文把 left-to-right 归为 GPT 等标准语言模型的限制；BERT 使用 masked LM 与双向自注意力。"
+    }
+  ]
+}
